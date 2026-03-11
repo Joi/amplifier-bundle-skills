@@ -11,6 +11,14 @@ IMAGE_PATH="$1"
 PROMPT="$2"
 TIMEOUT="${3:-60}"  # Default 60s timeout
 
+# Detect timeout command (GNU coreutils): timeout on Linux, gtimeout on macOS
+TIMEOUT_CMD=""
+if command -v timeout &>/dev/null; then
+    TIMEOUT_CMD="timeout"
+elif command -v gtimeout &>/dev/null; then
+    TIMEOUT_CMD="gtimeout"
+fi
+
 # Validate arguments
 if [ -z "$IMAGE_PATH" ] || [ -z "$PROMPT" ]; then
     echo "Usage: vision-analyze-robust.sh <image_path> <prompt> [timeout_seconds]" >&2
@@ -64,8 +72,13 @@ for PROVIDER in "${PROVIDERS[@]}"; do
     
     echo "Trying $PROVIDER (timeout: ${TIMEOUT}s)..." >&2
     
-    # Run with timeout
-    if timeout "$TIMEOUT" "$VENV_DIR/bin/python" "$SKILL_DIR/examples/$SCRIPT" "$IMAGE_PATH" "$PROMPT" 2>"$ERROR_LOG"; then
+    # Run with timeout (or without if no timeout command available)
+    if [ -n "$TIMEOUT_CMD" ]; then
+        RUNCMD=("$TIMEOUT_CMD" "$TIMEOUT" "$VENV_DIR/bin/python" "$SKILL_DIR/examples/$SCRIPT" "$IMAGE_PATH" "$PROMPT")
+    else
+        RUNCMD=("$VENV_DIR/bin/python" "$SKILL_DIR/examples/$SCRIPT" "$IMAGE_PATH" "$PROMPT")
+    fi
+    if "${RUNCMD[@]}" 2>"$ERROR_LOG"; then
         echo "✓ Success with $PROVIDER" >&2
         rm -f "$ERROR_LOG"
         exit 0

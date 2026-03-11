@@ -30,10 +30,10 @@ def analyze_image(image_path: str, prompt: str, max_retries: int = 2) -> str:
     Returns:
         Gemini's text analysis of the image
     """
-    # Initialize client
-    api_key = os.environ.get("GOOGLE_API_KEY")
+    # Initialize client (accept GOOGLE_API_KEY or GEMINI_API_KEY)
+    api_key = os.environ.get("GOOGLE_API_KEY") or os.environ.get("GEMINI_API_KEY")
     if not api_key:
-        raise ValueError("GOOGLE_API_KEY environment variable not set")
+        raise ValueError("GOOGLE_API_KEY or GEMINI_API_KEY environment variable not set")
     
     client = genai.Client(api_key=api_key)
     
